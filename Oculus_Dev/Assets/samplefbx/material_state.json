@@ -1,0 +1,885 @@
+{
+    "geoMap": {
+        "eyeMat": [
+            "mesh_l_high_cornea_001",
+            "mesh_r_high_cornea_001"
+        ],
+        "eyelashMat": [
+            "mesh_ld_low_eyeLash_001",
+            "mesh_rd_low_eyeLash_001",
+            "mesh_ru_low_eyeLash_001",
+            "mesh_lu_low_eyeLash_001"
+        ],
+        "mouthMat": [
+            "mesh_m_high_mouthTongue_001"
+        ],
+        "skinMat": [
+            "mesh_m_high_baseFace_001"
+        ],
+        "teethMat": [
+            "mesh_m_high_bottomTeeth_001",
+            "mesh_m_high_topTeeth_001"
+        ]
+    },
+    "globals": {
+        "background": [
+            {
+                "name": "bgColor1",
+                "type": "float3",
+                "value": [
+                    0.22439029812812805,
+                    0.25357940793037415,
+                    0.25905293226242065
+                ]
+            },
+            {
+                "name": "bgColor2",
+                "type": "float3",
+                "value": [
+                    0.008356546051800251,
+                    0.008356546051800251,
+                    0.0
+                ]
+            }
+        ],
+        "sss": [
+            {
+                "name": "sssToggle",
+                "type": "bool",
+                "value": true
+            },
+            {
+                "name": "sssRadius",
+                "type": "float",
+                "value": 0.4000000059604645
+            },
+            {
+                "name": "sssDepthBias",
+                "type": "float",
+                "value": 0.0031999999191612005
+            },
+            {
+                "name": "sssDesat",
+                "type": "float",
+                "value": 0.30000001192092896
+            },
+            {
+                "name": "sssDesatSpread",
+                "type": "float",
+                "value": 0.30000001192092896
+            },
+            {
+                "name": "sssProfiles",
+                "value": [
+                    {
+                        "id": 2,
+                        "parameters": [
+                            {
+                                "name": "kernal",
+                                "type": "float4x11",
+                                "value": [
+                                    [
+                                        0.556194,
+                                        0.756513,
+                                        0.832985,
+                                        0
+                                    ],
+                                    [
+                                        0.0047629,
+                                        2.33407e-06,
+                                        1.60101e-06,
+                                        -2
+                                    ],
+                                    [
+                                        0.0194711,
+                                        0.000224963,
+                                        0.000154309,
+                                        -1.28
+                                    ],
+                                    [
+                                        0.0367447,
+                                        0.00285263,
+                                        0.0019567,
+                                        -0.72
+                                    ],
+                                    [
+                                        0.0829917,
+                                        0.0209807,
+                                        0.0143913,
+                                        -0.32
+                                    ],
+                                    [
+                                        0.0779327,
+                                        0.0976829,
+                                        0.0670036,
+                                        -0.08
+                                    ],
+                                    [
+                                        0.0779327,
+                                        0.0976828,
+                                        0.0670035,
+                                        0.08
+                                    ],
+                                    [
+                                        0.0829917,
+                                        0.0209807,
+                                        0.0143913,
+                                        0.32
+                                    ],
+                                    [
+                                        0.0367447,
+                                        0.00285263,
+                                        0.0019567,
+                                        0.72
+                                    ],
+                                    [
+                                        0.0194711,
+                                        0.000224963,
+                                        0.000154308,
+                                        1.28
+                                    ],
+                                    [
+                                        0.0047629,
+                                        2.33407e-06,
+                                        1.60101e-06,
+                                        2
+                                    ]
+                                ]
+                            },
+                            {
+                                "name": "sssStrength",
+                                "type": "float3",
+                                "value": [
+                                    0.4846796691417694,
+                                    0.37308624386787415,
+                                    0.25591087341308594
+                                ]
+                            },
+                            {
+                                "name": "sssFalloff",
+                                "type": "float3",
+                                "value": [
+                                    1.0,
+                                    0.19900000095367432,
+                                    0.19900000095367432
+                                ]
+                            }
+                        ]
+                    }
+                ]
+            }
+        ]
+    },
+    "info": {
+        "commit": "",
+        "generatedFrom": "G:/Shared drives/Assets/Didimo Testing/assets/character/default_didimo/rig/default_didimo/versions/default_didimo_rig_default_didimo_v013.mb",
+        "repo": "https://git.didimo.co/didimo/shaders",
+        "shaderVersion": 1.0,
+        "stateVersion": 1.0,
+        "type": "materials"
+    },
+    "materials": [
+        {
+            "name": "eyeMat",
+            "opaque": true,
+            "parameters": [
+                {
+                    "name": "colorSampler",
+                    "type": "2dTexture",
+                    "value": "cornea_BaseColor_pub_1001.jpg"
+                },
+                {
+                    "name": "irisSpecInt",
+                    "type": "float",
+                    "value": 0.65
+                },
+                {
+                    "name": "irisRough",
+                    "type": "float",
+                    "value": 0.6383928656578064
+                },
+                {
+                    "name": "fresnel",
+                    "type": "float",
+                    "value": 0.9419642686843872
+                },
+                {
+                    "name": "corneaSpecInt",
+                    "type": "float",
+                    "value": 1.5758928060531616
+                },
+                {
+                    "name": "normalSampler",
+                    "type": "2dTexture",
+                    "value": "cornea_Normal_pub_1001.jpg"
+                },
+                {
+                    "name": "height",
+                    "type": "float",
+                    "value": 1.0
+                },
+                {
+                    "name": "refrSize",
+                    "type": "float",
+                    "value": 0.4665178656578064
+                },
+                {
+                    "name": "refrAmount",
+                    "type": "float",
+                    "value": 0.109375
+                },
+                {
+                    "name": "uvScale",
+                    "type": "float",
+                    "value": 0.9375
+                },
+                {
+                    "name": "zBias",
+                    "type": "float",
+                    "value": -0.2
+                },
+                {
+                    "name": "directDiffInt",
+                    "type": "float",
+                    "value": 0.7098214030265808
+                },
+                {
+                    "name": "directSpecInt",
+                    "type": "float",
+                    "value": 1.3125
+                },
+                {
+                    "name": "selfShadowDiff",
+                    "type": "float",
+                    "value": 0.8727678656578064
+                },
+                {
+                    "name": "indirectDiffInt",
+                    "type": "float",
+                    "value": 0.6931216716766357
+                },
+                {
+                    "name": "indirectSpecInt",
+                    "type": "float",
+                    "value": 0.20105820894241333
+                },
+                {
+                    "name": "selfShadowSpec",
+                    "type": "float",
+                    "value": 0.6026785969734192
+                },
+                {
+                    "name": "shadowSpread",
+                    "type": "float",
+                    "value": 0.4709821343421936
+                },
+                {
+                    "name": "shadowBias",
+                    "type": "float",
+                    "value": 0.0011160714784637094
+                },
+                {
+                    "name": "normalBias",
+                    "type": "float",
+                    "value": 0.0457589291036129
+                },
+                {
+                    "name": "gtId",
+                    "type": "long",
+                    "value": 1
+                },
+                {
+                    "name": "usePanorama",
+                    "type": "bool",
+                    "value": false
+                },
+                {
+                    "name": "textureSwitch",
+                    "type": "enum",
+                    "value": 0
+                }
+            ],
+            "shader": "eye"
+        },
+        {
+            "name": "teethMat",
+            "opaque": true,
+            "parameters": [
+                {
+                    "name": "colorSampler",
+                    "type": "2dTexture",
+                    "value": "mouthTongue_BaseColor_pub_1001.jpg"
+                },
+                {
+                    "name": "roughness",
+                    "type": "float",
+                    "value": 0.05315614491701126
+                },
+                {
+                    "name": "fresnel",
+                    "type": "float",
+                    "value": 0.35880398750305176
+                },
+                {
+                    "name": "normalSampler",
+                    "type": "2dTexture",
+                    "value": "mouthTongue_Normal_pub_1001.jpg"
+                },
+                {
+                    "name": "height",
+                    "type": "float",
+                    "value": 0.9151785969734192
+                },
+                {
+                    "name": "flipY",
+                    "type": "bool",
+                    "value": false
+                },
+                {
+                    "name": "aoSampler",
+                    "type": "2dTexture",
+                    "value": "mouthTongue_AO_pub_1001.jpg"
+                },
+                {
+                    "name": "aoInt",
+                    "type": "float",
+                    "value": 0.7633928656578064
+                },
+                {
+                    "name": "zBias",
+                    "type": "float",
+                    "value": -0.2
+                },
+                {
+                    "name": "directDiffInt",
+                    "type": "float",
+                    "value": 0.6179401874542236
+                },
+                {
+                    "name": "directSpecInt",
+                    "type": "float",
+                    "value": 0.7098214030265808
+                },
+                {
+                    "name": "selfShadowDiff",
+                    "type": "float",
+                    "value": 0.9330357313156128
+                },
+                {
+                    "name": "indirectDiffInt",
+                    "type": "float",
+                    "value": 0.17940199375152588
+                },
+                {
+                    "name": "indirectSpecInt",
+                    "type": "float",
+                    "value": 0.0
+                },
+                {
+                    "name": "selfShadowSpec",
+                    "type": "float",
+                    "value": 1.0
+                },
+                {
+                    "name": "shadowSpread",
+                    "type": "float",
+                    "value": 0.828125
+                },
+                {
+                    "name": "shadowBias",
+                    "type": "float",
+                    "value": 0.00814732164144516
+                },
+                {
+                    "name": "normalBias",
+                    "type": "float",
+                    "value": 0.01272321492433548
+                },
+                {
+                    "name": "gtId",
+                    "type": "long",
+                    "value": 0
+                },
+                {
+                    "name": "usePanorama",
+                    "type": "bool",
+                    "value": false
+                },
+                {
+                    "name": "textureSwitch",
+                    "type": "enum",
+                    "value": 0
+                }
+            ],
+            "shader": "textureLighting"
+        },
+        {
+            "name": "skinMat",
+            "opaque": true,
+            "parameters": [
+                {
+                    "name": "colorSampler",
+                    "type": "2dTexture",
+                    "value": "baseFace_BaseColor_pub_1001.jpg"
+                },
+                {
+                    "name": "linearColor",
+                    "type": "bool",
+                    "value": false
+                },
+                {
+                    "name": "desatInt",
+                    "type": "float",
+                    "value": 0.4575892984867096
+                },
+                {
+                    "name": "desatSpread",
+                    "type": "float",
+                    "value": 0.5625
+                },
+                {
+                    "name": "transColor",
+                    "type": "float3",
+                    "value": [
+                        0.5594059228897095,
+                        0.14864544570446014,
+                        0.2241409718990326
+                    ]
+                },
+                {
+                    "name": "transSampler",
+                    "type": "2dTexture",
+                    "value": "baseFace_Trans_pub_1001.jpg"
+                },
+                {
+                    "name": "SpecColor",
+                    "type": "float3",
+                    "value": [
+                        0.4234652817249298,
+                        0.5392360687255859,
+                        0.5816831588745117
+                    ]
+                },
+                {
+                    "name": "specSampler",
+                    "type": "2dTexture",
+                    "value": "baseFace_Spec_pub_1001.jpg"
+                },
+                {
+                    "name": "roughSampler",
+                    "type": "2dTexture",
+                    "value": "baseFace_Rough_pub_1001.jpg"
+                },
+                {
+                    "name": "indSpecRoughBias",
+                    "type": "float",
+                    "value": 0.49735450744628906
+                },
+                {
+                    "name": "dirFresnel",
+                    "type": "float",
+                    "value": 0.6473214030265808
+                },
+                {
+                    "name": "indFresnel",
+                    "type": "float",
+                    "value": 0.9598214030265808
+                },
+                {
+                    "name": "normalSampler",
+                    "type": "2dTexture",
+                    "value": "baseFace_Normal_pub_1001.jpg"
+                },
+                {
+                    "name": "height",
+                    "type": "float",
+                    "value": 0.4464285671710968
+                },
+                {
+                    "name": "flipY",
+                    "type": "bool",
+                    "value": false
+                },
+                {
+                    "name": "aoSampler",
+                    "type": "2dTexture",
+                    "value": "baseFace_AO_pub_1001.jpg"
+                },
+                {
+                    "name": "aoInt",
+                    "type": "float",
+                    "value": 0.9754464030265808
+                },
+                {
+                    "name": "cavitySampler",
+                    "type": "2dTexture",
+                    "value": "baseFace_Cavity_pub_1001.jpg"
+                },
+                {
+                    "name": "cavityDiffuse",
+                    "type": "float",
+                    "value": 0.6071428656578064
+                },
+                {
+                    "name": "cavitySpecular",
+                    "type": "float",
+                    "value": 0.2098214328289032
+                },
+                {
+                    "name": "hairColor",
+                    "type": "float3",
+                    "value": [
+                        0.012376237660646439,
+                        0.012376237660646439,
+                        0.012376237660646439
+                    ]
+                },
+                {
+                    "name": "zBiasSampler",
+                    "type": "2dTexture",
+                    "value": "baseFace_zBiasMask_pub_1001.jpg"
+                },
+                {
+                    "name": "zBias",
+                    "type": "float",
+                    "value": 0.262458473443985
+                },
+                {
+                    "name": "directDiffInt",
+                    "type": "float",
+                    "value": 1.9196428060531616
+                },
+                {
+                    "name": "directSpecInt",
+                    "type": "float",
+                    "value": 1.600000023841858
+                },
+                {
+                    "name": "selfShadowDiff",
+                    "type": "float",
+                    "value": 0.3499999940395355
+                },
+                {
+                    "name": "indirectDiffInt",
+                    "type": "float",
+                    "value": 0.2366071492433548
+                },
+                {
+                    "name": "indirectSpecInt",
+                    "type": "float",
+                    "value": 1.399999976158142
+                },
+                {
+                    "name": "selfShadowSpec",
+                    "type": "float",
+                    "value": 0.3499999940395355
+                },
+                {
+                    "name": "shadowSpread",
+                    "type": "float",
+                    "value": 0.45502644777297974
+                },
+                {
+                    "name": "shadowBias",
+                    "type": "float",
+                    "value": 0.0020000000949949026
+                },
+                {
+                    "name": "normalBias",
+                    "type": "float",
+                    "value": 0.0010000000474974513
+                },
+                {
+                    "name": "gtId",
+                    "type": "long",
+                    "value": 2
+                },
+                {
+                    "name": "textureSwitch",
+                    "type": "enum",
+                    "value": 0
+                },
+                {
+                    "name": "usePanorama",
+                    "type": "bool",
+                    "value": false
+                }
+            ],
+            "shader": "skin"
+        },
+        {
+            "name": "mouthMat",
+            "opaque": false,
+            "parameters": [
+                {
+                    "name": "colorSampler",
+                    "type": "2dTexture",
+                    "value": "mouthTongue_BaseColor_pub_1001.jpg"
+                },
+                {
+                    "name": "desatInt",
+                    "type": "float",
+                    "value": 0.15625
+                },
+                {
+                    "name": "desatSpread",
+                    "type": "float",
+                    "value": 0.2259136140346527
+                },
+                {
+                    "name": "roughness",
+                    "type": "float",
+                    "value": 0.3348214328289032
+                },
+                {
+                    "name": "indSpecRoughBias",
+                    "type": "float",
+                    "value": 0.3058035671710968
+                },
+                {
+                    "name": "dirFresnel",
+                    "type": "float",
+                    "value": 0.3571428656578064
+                },
+                {
+                    "name": "indFresnel",
+                    "type": "float",
+                    "value": 0.8370535969734192
+                },
+                {
+                    "name": "normalSampler",
+                    "type": "2dTexture",
+                    "value": "mouthTongue_Normal_pub_1001.jpg"
+                },
+                {
+                    "name": "height",
+                    "type": "float",
+                    "value": 1.1941964626312256
+                },
+                {
+                    "name": "flipY",
+                    "type": "bool",
+                    "value": false
+                },
+                {
+                    "name": "aoSampler",
+                    "type": "2dTexture",
+                    "value": "mouthTongue_AO_pub_1001.jpg"
+                },
+                {
+                    "name": "aoInt",
+                    "type": "float",
+                    "value": 1.0
+                },
+                {
+                    "name": "zBias",
+                    "type": "float",
+                    "value": -0.2
+                },
+                {
+                    "name": "directDiffInt",
+                    "type": "float",
+                    "value": 0.4910714328289032
+                },
+                {
+                    "name": "directSpecInt",
+                    "type": "float",
+                    "value": 0.5401785969734192
+                },
+                {
+                    "name": "selfShadowDiff",
+                    "type": "float",
+                    "value": 0.9308035969734192
+                },
+                {
+                    "name": "indirectDiffInt",
+                    "type": "float",
+                    "value": 0.0
+                },
+                {
+                    "name": "indirectSpecInt",
+                    "type": "float",
+                    "value": 0.0
+                },
+                {
+                    "name": "selfShadowSpec",
+                    "type": "float",
+                    "value": 0.9799107313156128
+                },
+                {
+                    "name": "shadowSpread",
+                    "type": "float",
+                    "value": 0.9508928656578064
+                },
+                {
+                    "name": "shadowBias",
+                    "type": "float",
+                    "value": 0.00814732164144516
+                },
+                {
+                    "name": "normalBias",
+                    "type": "float",
+                    "value": 0.010714286006987095
+                },
+                {
+                    "name": "gtId",
+                    "type": "long",
+                    "value": 2
+                },
+                {
+                    "name": "textureSwitch",
+                    "type": "enum",
+                    "value": 0
+                },
+                {
+                    "name": "usePanorama",
+                    "type": "bool",
+                    "value": false
+                }
+            ],
+            "shader": "mouth"
+        },
+        {
+            "name": "eyelashMat",
+            "opaque": false,
+            "parameters": [
+                {
+                    "name": "Color",
+                    "type": "float3",
+                    "value": [
+                        102.75268817204302,
+                        76.12903225806453,
+                        67.12903225806453
+                    ]
+                },
+                {
+                    "name": "fresnel",
+                    "type": "float",
+                    "value": 0.5
+                },
+                {
+                    "name": "roughness",
+                    "type": "float",
+                    "value": 0.8195876479148865
+                },
+                {
+                    "name": "opacitySampler",
+                    "type": "2dTexture",
+                    "value": "eyeLash_Opacity_pub_1001.jpg"
+                },
+                {
+                    "name": "opacityThreshold",
+                    "type": "float",
+                    "value": 0.354347825050354
+                },
+                {
+                    "name": "zBias",
+                    "type": "float",
+                    "value": 1.25
+                },
+                {
+                    "name": "directDiffInt",
+                    "type": "float",
+                    "value": 1.0
+                },
+                {
+                    "name": "directSpecInt",
+                    "type": "float",
+                    "value": 1.0
+                },
+                {
+                    "name": "selfShadowDiff",
+                    "type": "float",
+                    "value": 0.20000000298023224
+                },
+                {
+                    "name": "indirectDiffInt",
+                    "type": "float",
+                    "value": 1.0
+                },
+                {
+                    "name": "indirectSpecInt",
+                    "type": "float",
+                    "value": 0.0
+                },
+                {
+                    "name": "selfShadowSpec",
+                    "type": "float",
+                    "value": 0.20000000298023224
+                },
+                {
+                    "name": "shadowSpread",
+                    "type": "float",
+                    "value": 0.3
+                },
+                {
+                    "name": "shadowBias",
+                    "type": "float",
+                    "value": 0.004
+                },
+                {
+                    "name": "normalBias",
+                    "type": "float",
+                    "value": 0.0015
+                },
+                {
+                    "name": "gtId",
+                    "type": "long",
+                    "value": 0
+                },
+                {
+                    "name": "usePanorama",
+                    "type": "bool",
+                    "value": false
+                }
+            ],
+            "shader": "transColor"
+        }
+    ],
+    "shaders": {
+        "eye": {
+            "number of passes": 1,
+            "opaque": true,
+            "passes": [
+                {
+                    "fragment shader": "eye.frag",
+                    "render target": "main"
+                }
+            ]
+        },
+        "glassy": {
+            "number of passes": 1,
+            "opaque": false,
+            "passes": [
+                {
+                    "fragment shader": "glassy.frag",
+                    "render target": "main"
+                }
+            ]
+        },
+        "skin": {
+            "number of passes": 2,
+            "opaque": true,
+            "passes": [
+                {
+                    "fragment shader": "skinSpecular.frag",
+                    "render target": "main"
+                },
+                {
+                    "fragment shader": "skinDiffuse.frag",
+                    "render target": "skin"
+                }
+            ]
+        },
+        "textureLighting": {
+            "number of passes": 1,
+            "opaque": true,
+            "passes": [
+                {
+                    "fragment shader": "textureLighting.frag",
+                    "render target": "main"
+                }
+            ]
+        }
+    }
+}
