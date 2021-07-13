@@ -13,7 +13,6 @@ public class coachmanAnimation : MonoBehaviour
         inputManager = GetComponent<playerInput>();
         animator = GetComponent<Animator>();
         animationClip = animator.runtimeAnimatorController.animationClips;
-        Debug.Log("该对象有" + animationClip.Length + "个动画");
         foreach(AnimationClip a in animationClip)//遍历获取所有该对象的动画名
         {
             Debug.Log(a.name);
@@ -26,13 +25,10 @@ public class coachmanAnimation : MonoBehaviour
     {
         if (inputManager.SeeAround)
         {
-            Debug.Log("按下动作启动按钮");
             animator.Play("SeeAround");   //播放动画
             animator.Update(0);         //刷新0层的动画，默认新建的动画在0层。
             //GetAnimatorInfo();
         }
-        else
-            Debug.Log("未能识别按钮");
         // if (Input.GetKeyDown(KeyCode.B))
         // {
         //     Debug.Log("按下B");
