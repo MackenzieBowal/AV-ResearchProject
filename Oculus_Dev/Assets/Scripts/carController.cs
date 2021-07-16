@@ -7,6 +7,7 @@ using System;
 using System.IO;
 using UnityEngine;
 using System.Threading;
+using static OVRBoundary;
 
 public class carController : MonoBehaviour
 {
@@ -19,14 +20,10 @@ public class carController : MonoBehaviour
     public Animator handAnimator;
     // All gestures, ccoachman movements are achieved by animation. So I use Animator to manage them.
     private Animator activatedAnimator;
-    /*
-        coachmantype decides which coachman is activated:
-        1:human-like coachman(Latifa), 2:mechCoachman(Robot Kyle), 3:CapsuleCoachman1, 4:CapsuleCoachman2
-    */
 
     //private AnimatorStateInfo animatorInfo;
 
-    public GameObject OVRCamera;
+    public GameObject centerEye;
     private GameObject coachman;
     private GameObject mechCoachman;
     private GameObject capsuleCoachman1;
@@ -44,32 +41,38 @@ public class carController : MonoBehaviour
     private GameObject menu;
     //movement controls the speed of vehicle, the original speed is 40km/h,or 35km/h
     private Vector3 movement = new Vector3(0.0f, 0.0f, 0.2f);
+
     private string[] coachmanTag = {"", "_Mech", "_Cap1","_Cap2"};
     //The total number of all tasks for one participant
     private const int TOTAL_TASK_NUM = 46;
     //The task that will be showed next
-    private int taskNum = -1;
-    private float TTD = 0;
-    private bool animationFlag = false;
-    //isStart is decided by the menu button:Start task
-    private bool isStart = false;
+    private int taskNum = 0;
     private int[] randomOrder;
     private int userID;
     private float startTime;
     private double slowDownTime = 0.5f;
+    private Vector3 Rotation;
+    private Vector3 Position;
+    private float TimeInSeconds;
+    private Vector3[] boundaryPoints;
     //network and DB
-    MongoClient client = new MongoClient("mongodb+srv://WeiWei:AnthroWME-db@cluster0.u0268.mongodb.net/myFirstDatabase?retryWrites=true&w=majority");
+    private MongoClient client = new MongoClient("mongodb+srv://WeiWei:AnthroWME-db@cluster0.u0268.mongodb.net/myFirstDatabase?retryWrites=true&w=majority");
     IMongoDatabase database;
     IMongoCollection<BsonDocument> posCollection;
     IMongoCollection<BsonDocument> rotCollection;
     IMongoCollection<BsonDocument> userCollection;
-    bool threadFlag = true;
+    private bool animationFlag = false;
+    //isStart is decided by the menu button:Start task
+    private bool isStart = false;
+    private bool threadFlag = true;
+    private bool isSlowDown = false;
     void Start()
     {
-        startTime = Time.realtimeSinceStartup;
-
+        /*
+            get all the gameObject.
+        */
         menu = GameObject.Find("Menu");
-
+        city = GameObject.Find("City");
         coachman = GameObject.Find("CoachManAV/Coachman");
         mechCoachman = GameObject.Find("CoachManAV/MechCoachman");
         capsuleCoachman1 = GameObject.Find("CoachManAV/CapsuleCoachman1");
@@ -90,27 +93,59 @@ public class carController : MonoBehaviour
         posCollection = database.GetCollection<BsonDocument>("crossinfops");
         rotCollection = database.GetCollection<BsonDocument>("crossinfors");
         userCollection = database.GetCollection<BsonDocument>("userinfo");
-        //Get the userID
-        GetUserIDFromDB();
-        //After get the userID, update it(plus 1) and save the update to DB
-        UpdateUserID();
+        Debug.Log("#####start getting userID from DB");
+        //Get and update the userID
+        GetAndUpdateUserID();
         //Generate the order for each participant
         randomOrder = GetRandomList(TOTAL_TASK_NUM);
-
+        Debug.Log(randomOrder[0]);
         SetAnimator();
-        //start to record data and send it to DB
-        SendDataToDB();
+        //get the boundary info
+        boundaryPoints = GameObject.Find("BoundaryCheck").GetComponent<GuardianScripts>().getBoundaryInfo();
+        float x1 = 0f, y1 = 0f, z1 = 0f,x2 = 0f, y2 = 0f, z2 = 0f;
+        float maxDis = 0f;
+        for (int i = 0; i < boundaryPoints.Length; i++)
+        {
+            if (boundaryPoints[i].x > x1)
+                x1 = boundaryPoints[i].x;
+            if (boundaryPoints[i].x < x2)
+                x2 = boundaryPoints[i].x;
+            if (boundaryPoints[i].y > y1)
+                y1 = boundaryPoints[i].y;
+            if (boundaryPoints[i].y < y2)
+                y2 = boundaryPoints[i].y;
+            if (boundaryPoints[i].z > z1)
+                z1 = boundaryPoints[i].z;
+            if (boundaryPoints[i].z < z2)
+                z2 = boundaryPoints[i].z;
+            float temp = (float)(Math.Pow(boundaryPoints[i].x, 2) + Math.Pow(boundaryPoints[i].z, 2));
+            if (maxDis < temp)
+                maxDis = temp;
+        }
+        Debug.Log("boundary max x is " + x1 + " min x is " + x2);
+        Debug.Log("boundary max y is " + y1 + " min y is " + y2);
+        Debug.Log("boundary max z is " + z1 + " min z is " + z2);
+        Debug.Log("boundary max dis" + maxDis);
+         if (maxDis < (4.5 * 4.5))
+            Quit();
+        // Debug.Log(dim.x);
+        // Debug.Log(dim.y);
+        // Debug.Log(dim.z);
     }
 
     private void Update()
     {
+        Rotation = centerEye.transform.eulerAngles;
+        Position = centerEye.transform.position;
+        TimeInSeconds = Time.realtimeSinceStartup - startTime;
         //if crossed, end task
-        if (OVRCamera.transform.localPosition.x < -328)
+        if (centerEye.transform.localPosition.x < -324)
             EndTask();
         //if time is out, end task(the pedestrians didn't make decisions)
         else if (Time.realtimeSinceStartup - startTime > 33)
             EndTask();
     }
+
     void FixedUpdate()
     {        
         if(isStart)
@@ -120,16 +155,20 @@ public class carController : MonoBehaviour
             //Get the square length of two object vectors
             float sqrLenght = (zebraLine.position - this.transform.position).sqrMagnitude;
             //Slow down
-            if (sqrLenght < 100 * 100 )
+            if (!isSlowDown&&sqrLenght < 5 * 5 )
                 {
                 //slow down, the slowdown function is Quadratic function : speed(m/s) = 14/9t^2 - 28/3t + 14, which make sure the car will stop at 3rd second, align with Chang.et.al' work
                 slowDownTime += 0.02f;
-                movement.z = (float)((14 / 9) *Math.Pow(slowDownTime, 2) - (28/3)* slowDownTime + 14);
+                movement.z = movement.z - 0.02f; //(float)((14 / 9) * Math.Pow(slowDownTime, 2) - (28/3)* slowDownTime + 14) / 50;
+                Debug.Log("#####movement.z:");
+                Debug.Log(movement.z);
                 //TBA: pop up
-                if (!animationFlag&& movement.z == 0)
+                if (!animationFlag && movement.z <= 0)
                 {
                     //play animation
                     animationFlag = true;
+                    movement.z = 0;
+                    isSlowDown = true;
                     PlayAnimation();
                 }
             }
@@ -164,17 +203,21 @@ public class carController : MonoBehaviour
     }
     public void StartTask()
     {
-        taskNum++;
+        Debug.Log(taskNum);
         if (taskNum >= TOTAL_TASK_NUM)
-            Debug.Log("Experiment is over");
+            Debug.Log("#####Experiment is over");
             //show experiment over tips
         else
         {
             menu.SetActive(false);
             isStart = true;
             animationFlag = false;
-            movement.z = 0.05f;
-            this.transform.Translate(new Vector3(0.0f, 0.0f, -20.0f));
+            isSlowDown = false;
+            movement.z = 0.02f;
+            startTime = Time.realtimeSinceStartup;
+            this.transform.localPosition = new Vector3(-322.0f, 71.7f, -20.0f);  
+            //saveDatatest();
+            SendDataToDB();
         }
     }
 
@@ -230,43 +273,37 @@ public class carController : MonoBehaviour
     }
     public async void SaveCrossInfoToDB()
     {
-        Vector3 rotation = OVRCamera.transform.localEulerAngles;
-        Vector3 position = OVRCamera.transform.localPosition;
-        float timeInSeconds = Time.realtimeSinceStartup - startTime;
-        var posData = new BsonDocument { { "userID", userID }, { "x", position.x }, { "z", position.z }, { "timeInSeconds", timeInSeconds } };
-        var rotData = new BsonDocument { { "userID", userID }, { "rotationX", rotation.x }, { "rotationY", rotation.y }, { "rotationZ", rotation.z }, { "timeInSeconds", timeInSeconds } };
+        Debug.Log("#####save data to DB");
+        var posData = new BsonDocument { { "userID", userID }, { "x", Position.x }, { "z", Position.z }, { "timeInSeconds", TimeInSeconds } };
+        var rotData = new BsonDocument { { "userID", userID }, { "rotationX", Rotation.x }, { "rotationY", Rotation.y }, { "rotationZ", Rotation.z }, { "timeInSeconds", TimeInSeconds } };
         await posCollection.InsertOneAsync(posData);
         await rotCollection.InsertOneAsync(rotData);
+        Debug.Log("#####save data to DB is successful");
     }
-    public async void GetUserIDFromDB()
+    public async void GetAndUpdateUserID()
     {
         var userInfo = userCollection.FindAsync(new BsonDocument());
         var userInfoAwaited = await userInfo;
 
-        Debug.Log("received info from DB");
+        Debug.Log("#####received info from DB");
         var userIDJson = userInfoAwaited.ToList()[0].ToString();
-
         int startPos = userIDJson.IndexOf("),", 0) + 2;
-        int beginPos = userIDJson.IndexOf(" :", startPos);
-        int endPos = userIDJson.IndexOf(",", startPos);
+        int beginPos = userIDJson.IndexOf(": ", startPos);
         string userId = "";
-        for (int j = beginPos + 2; j < endPos; j++)
+        for (int j = beginPos + 2; j < userIDJson.Length - 1; j++)
             userId = userId + userIDJson[j];
         userID = int.Parse(userId);
-    }
-
-    public async void UpdateUserID()
-    {
         var filter = Builders<BsonDocument>.Filter.Eq("userID", userID);
         var update = Builders<BsonDocument>.Update.Set("userID", userID + 1);
-        userCollection.UpdateOne(filter, update);
+        Debug.Log("#####update user DB");
+        await userCollection.UpdateOneAsync(filter, update);
     }
     public void timer()
     {
         //Thread.CurrentThread.IsBackground = true;
         while (threadFlag)
         {
-            Thread.CurrentThread.Join(10000);
+            Thread.CurrentThread.Join(5000);
             SaveCrossInfoToDB();
         }
     }
@@ -306,7 +343,7 @@ public class carController : MonoBehaviour
         lips[1].SetActive(pos == 11 || pos == 14);
         lips[2].SetActive(pos == 12 || pos == 15);
 
-        hand.SetActive(pos >= 16);
+        //TBA hand.SetActive(pos >= 16);
         //disable all unchosen coachman
         int animatorType = pos / 2 - 1;
         coachman.SetActive(animatorType == 0);
@@ -328,13 +365,15 @@ public class carController : MonoBehaviour
     //when one task ends
     public void EndTask()
     {
+        startTime = Time.realtimeSinceStartup;
         threadFlag = false;
         isStart = false;
         //save the waiting time&crossing time to DB
         //relocate the pedestrian
-        OVRCamera.transform.position = new Vector3(-328, (float)71.4, (float)0.72);
+        centerEye.transform.position = new Vector3(-319.5f, 71.4f, 0.72f);
         //show the menu
         menu.SetActive(true);
+        taskNum++;
     }
 
     //This method will not be called

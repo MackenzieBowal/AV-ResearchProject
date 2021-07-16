@@ -2,7 +2,6 @@
 using MongoDB.Driver;
 using System.Collections;
 using System.Threading.Tasks;
-using Newtonsoft.Json;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
@@ -71,6 +70,7 @@ public class crossInfoRequest : MonoBehaviour
             */
             crossInfos.Add(Deserialize(crossInfo.ToString()));
         }
+
         return crossInfos;
     }
 
@@ -95,6 +95,9 @@ public class crossInfoRequest : MonoBehaviour
             //Debug.Log(rawJson.Substring(beginPos + 1, endPos));
             i = i + 1;
         }
+        Debug.Log(values[0]);
+        Debug.Log(values[1]);
+        Debug.Log(values[2]);
         crossInfo.userID = int.Parse(values[0]);
         crossInfo.x = int.Parse(values[1]);
         crossInfo.z = int.Parse(values[2]);
