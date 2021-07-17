@@ -18,20 +18,13 @@ public class carController : MonoBehaviour
     public Animator capsuleCoachman2Animator;
     //Animators for hand gestures-TBA
     public Animator handAnimator;
-    // All gestures, ccoachman movements are achieved by animation. So I use Animator to manage them.
+    // All gestures, ccoachman velocitys are achieved by animation. So I use Animator to manage them.
     private Animator activatedAnimator;
 
     //private AnimatorStateInfo animatorInfo;
 
     public GameObject centerEye;
-    private GameObject coachman;
-    private GameObject mechCoachman;
-    private GameObject capsuleCoachman1;
-    private GameObject capsuleCoachman2;
-
-    private Transform zebraLine;
-
-    private GameObject city;
+    public GameObject[] coachmen = new GameObject[4];
     // located propertities of facial expression design
     private GameObject[] lips = new GameObject[3];
     private GameObject rightEye;
@@ -39,18 +32,21 @@ public class carController : MonoBehaviour
     private GameObject hand;
     //menu
     private GameObject menu;
-    //movement controls the speed of vehicle, the original speed is 40km/h,or 35km/h
-    private Vector3 movement = new Vector3(0.0f, 0.0f, 0.2f);
-
+    private GameObject quitButton;
+    //velocity controls the speed of vehicle, the original speed is 40km/h,or 35km/h
+    private Vector3 velocity = new Vector3(0.0f, 0.0f, 10f);
+    private Vector3 deceleration = new Vector3(0.0f, 0.0f, - 3.3f);
     private string[] coachmanTag = {"", "_Mech", "_Cap1","_Cap2"};
+    private float[] popDis = {0.575f, 0.52f, 0.65f, 0.58f};
     //The total number of all tasks for one participant
-    private const int TOTAL_TASK_NUM = 46;
+    private const int TOTAL_TASK_NUM = 6;
     //The task that will be showed next
     private int taskNum = 0;
     private int[] randomOrder;
     private int userID;
+    private int coachmanType;
     private float startTime;
-    private double slowDownTime = 0.5f;
+    //private double slowDownTime = 0.5f;
     private Vector3 Rotation;
     private Vector3 Position;
     private float TimeInSeconds;
@@ -60,6 +56,7 @@ public class carController : MonoBehaviour
     IMongoDatabase database;
     IMongoCollection<BsonDocument> posCollection;
     IMongoCollection<BsonDocument> rotCollection;
+    IMongoCollection<BsonDocument> orderCollection;
     IMongoCollection<BsonDocument> userCollection;
     private bool animationFlag = false;
     //isStart is decided by the menu button:Start task
@@ -72,15 +69,9 @@ public class carController : MonoBehaviour
             get all the gameObject.
         */
         menu = GameObject.Find("Menu");
-        city = GameObject.Find("City");
-        coachman = GameObject.Find("CoachManAV/Coachman");
-        mechCoachman = GameObject.Find("CoachManAV/MechCoachman");
-        capsuleCoachman1 = GameObject.Find("CoachManAV/CapsuleCoachman1");
-        capsuleCoachman2 = GameObject.Find("CoachManAV/CapsuleCoachman2");
-        // located the zebraline
-        Transform props = city.transform.Find("props");
-        zebraLine = props.transform.Find("Street 8 Prefab (6)");
-
+        // set the quitButton unvisiable
+        quitButton = GameObject.Find("Menu/Quit");
+        quitButton.SetActive(false);
         leftEye = GameObject.Find("Waymo/LeftEye");
         rightEye = GameObject.Find("Waymo/RightEye");
         lips[0] = GameObject.Find("Waymo/NormalLip");
@@ -88,49 +79,22 @@ public class carController : MonoBehaviour
         lips[2] = GameObject.Find("Waymo/NegativeLip");
         //animationClip = activatedAnimator.runtimeAnimatorController.animationClips;
 
+        //boundary points
+        boundaryPoints = GameObject.Find("BoundaryCheck").GetComponent<GuardianScripts>().getBoundaryInfo();
+        BoundaryCheck();
         //database and collections that will be used
         database = client.GetDatabase("myFirstDatabase");
         posCollection = database.GetCollection<BsonDocument>("crossinfops");
         rotCollection = database.GetCollection<BsonDocument>("crossinfors");
+        orderCollection = database.GetCollection<BsonDocument>("orderinfos");
         userCollection = database.GetCollection<BsonDocument>("userinfo");
         Debug.Log("#####start getting userID from DB");
         //Get and update the userID
         GetAndUpdateUserID();
-        //Generate the order for each participant
+        //Generate the order for each participant and save it to database
         randomOrder = GetRandomList(TOTAL_TASK_NUM);
-        Debug.Log(randomOrder[0]);
+        SaveOrderInfoToDB();
         SetAnimator();
-        //get the boundary info
-        boundaryPoints = GameObject.Find("BoundaryCheck").GetComponent<GuardianScripts>().getBoundaryInfo();
-        float x1 = 0f, y1 = 0f, z1 = 0f,x2 = 0f, y2 = 0f, z2 = 0f;
-        float maxDis = 0f;
-        for (int i = 0; i < boundaryPoints.Length; i++)
-        {
-            if (boundaryPoints[i].x > x1)
-                x1 = boundaryPoints[i].x;
-            if (boundaryPoints[i].x < x2)
-                x2 = boundaryPoints[i].x;
-            if (boundaryPoints[i].y > y1)
-                y1 = boundaryPoints[i].y;
-            if (boundaryPoints[i].y < y2)
-                y2 = boundaryPoints[i].y;
-            if (boundaryPoints[i].z > z1)
-                z1 = boundaryPoints[i].z;
-            if (boundaryPoints[i].z < z2)
-                z2 = boundaryPoints[i].z;
-            float temp = (float)(Math.Pow(boundaryPoints[i].x, 2) + Math.Pow(boundaryPoints[i].z, 2));
-            if (maxDis < temp)
-                maxDis = temp;
-        }
-        Debug.Log("boundary max x is " + x1 + " min x is " + x2);
-        Debug.Log("boundary max y is " + y1 + " min y is " + y2);
-        Debug.Log("boundary max z is " + z1 + " min z is " + z2);
-        Debug.Log("boundary max dis" + maxDis);
-         if (maxDis < (4.5 * 4.5))
-            Quit();
-        // Debug.Log(dim.x);
-        // Debug.Log(dim.y);
-        // Debug.Log(dim.z);
     }
 
     private void Update()
@@ -139,7 +103,7 @@ public class carController : MonoBehaviour
         Position = centerEye.transform.position;
         TimeInSeconds = Time.realtimeSinceStartup - startTime;
         //if crossed, end task
-        if (centerEye.transform.localPosition.x < -324)
+        if (centerEye.transform.position.x < -324)
             EndTask();
         //if time is out, end task(the pedestrians didn't make decisions)
         else if (Time.realtimeSinceStartup - startTime > 33)
@@ -151,23 +115,21 @@ public class carController : MonoBehaviour
         if(isStart)
         {  
             //moving AV
-            this.transform.Translate(movement);
-            //Get the square length of two object vectors
-            float sqrLenght = (zebraLine.position - this.transform.position).sqrMagnitude;
+            this.transform.Translate(velocity * Time.deltaTime);
             //Slow down
-            if (!isSlowDown&&sqrLenght < 5 * 5 )
-                {
-                //slow down, the slowdown function is Quadratic function : speed(m/s) = 14/9t^2 - 28/3t + 14, which make sure the car will stop at 3rd second, align with Chang.et.al' work
-                slowDownTime += 0.02f;
-                movement.z = movement.z - 0.02f; //(float)((14 / 9) * Math.Pow(slowDownTime, 2) - (28/3)* slowDownTime + 14) / 50;
-                Debug.Log("#####movement.z:");
-                Debug.Log(movement.z);
-                //TBA: pop up
-                if (!animationFlag && movement.z <= 0)
+            if (!isSlowDown&&this.transform.position.z > -16 )
+            {
+                velocity = velocity + deceleration * Time.deltaTime;
+                 Debug.Log("##### pos: " + this.transform.position.z);
+                 Debug.Log("##### velocity: " + velocity.z);
+                //pop up
+                if(coachmanType <= 3 && coachmanType >= 0)
+                    coachmen[coachmanType].transform.Translate(new Vector3(0f, popDis[coachmanType] / 3.0f, 0f) * Time.deltaTime);
+                if (!animationFlag && velocity.z <= 0)
                 {
                     //play animation
                     animationFlag = true;
-                    movement.z = 0;
+                    velocity.z = 0;
                     isSlowDown = true;
                     PlayAnimation();
                 }
@@ -187,9 +149,8 @@ public class carController : MonoBehaviour
         if (1 < pos&&pos < 10)
         {
             //coachman design
-            int coachmanType = pos / 2 - 1;
             int isNegative = pos % 2 ;
-            TriggerCoachmanAnimation(coachmanType, isNegative);
+            TriggerCoachmanAnimation(isNegative);
         }
         else if(10 <= pos&&pos < 16)
         {
@@ -205,17 +166,19 @@ public class carController : MonoBehaviour
     {
         Debug.Log(taskNum);
         if (taskNum >= TOTAL_TASK_NUM)
-            Debug.Log("#####Experiment is over");
-            //show experiment over tips
+            {
+                Debug.Log("#####Experiment is over");
+                quitButton.SetActive(true);
+            }
         else
         {
             menu.SetActive(false);
             isStart = true;
             animationFlag = false;
             isSlowDown = false;
-            movement.z = 0.02f;
+            velocity = new Vector3(0.0f, 0.0f, 10f);
             startTime = Time.realtimeSinceStartup;
-            this.transform.localPosition = new Vector3(-322.0f, 71.7f, -20.0f);  
+            this.transform.localPosition = new Vector3(-322.0f, 71.7f, -21.0f);  
             //saveDatatest();
             SendDataToDB();
         }
@@ -247,8 +210,8 @@ public class carController : MonoBehaviour
         }
     }
     */
-
-    public void TriggerCoachmanAnimation(int coachmanType, int isNegative)
+    //pop up the coachman at the slowdown process
+    public void TriggerCoachmanAnimation(int isNegative)
     {
         if(isNegative == 0)
             activatedAnimator.Play("Positive" + coachmanTag[coachmanType]);
@@ -273,12 +236,27 @@ public class carController : MonoBehaviour
     }
     public async void SaveCrossInfoToDB()
     {
-        Debug.Log("#####save data to DB");
+        Debug.Log("#####save cross data to DB");
         var posData = new BsonDocument { { "userID", userID }, { "x", Position.x }, { "z", Position.z }, { "timeInSeconds", TimeInSeconds } };
         var rotData = new BsonDocument { { "userID", userID }, { "rotationX", Rotation.x }, { "rotationY", Rotation.y }, { "rotationZ", Rotation.z }, { "timeInSeconds", TimeInSeconds } };
         await posCollection.InsertOneAsync(posData);
         await rotCollection.InsertOneAsync(rotData);
-        Debug.Log("#####save data to DB is successful");
+        Debug.Log("#####saving cross data to DB is successful");
+    }
+
+    public async void SaveOrderInfoToDB()
+    {
+        Debug.Log("#####save order data to DB");
+        string order = "";
+        foreach (int value in randomOrder)
+        {
+            order = order + value.ToString() + ", ";
+        }
+        order = order.Substring(0,order.Length-2);
+        
+        var orderData = new BsonDocument { { "userID", userID }, { "order", order }};
+        await orderCollection.InsertOneAsync(orderData);
+        Debug.Log("#####saving order data to DB is successful");
     }
     public async void GetAndUpdateUserID()
     {
@@ -303,9 +281,46 @@ public class carController : MonoBehaviour
         //Thread.CurrentThread.IsBackground = true;
         while (threadFlag)
         {
-            Thread.CurrentThread.Join(5000);
+            Thread.CurrentThread.Join(10000);
             SaveCrossInfoToDB();
         }
+    }
+
+    public void BoundaryCheck()
+    {
+        //get the boundary info
+        float x1 = 0f, y1 = 0f, z1 = 0f,x2 = 0f, y2 = 0f, z2 = 0f;
+        float maxDis = 0f;
+        for (int i = 0; i < boundaryPoints.Length; i++)
+        {
+            if (boundaryPoints[i].x > x1)
+                x1 = boundaryPoints[i].x;
+            if (boundaryPoints[i].x < x2)
+                x2 = boundaryPoints[i].x;
+            if (boundaryPoints[i].y > y1)
+                y1 = boundaryPoints[i].y;
+            if (boundaryPoints[i].y < y2)
+                y2 = boundaryPoints[i].y;
+            if (boundaryPoints[i].z > z1)
+                z1 = boundaryPoints[i].z;
+            if (boundaryPoints[i].z < z2)
+                z2 = boundaryPoints[i].z;
+            float temp = (float)(Math.Pow(boundaryPoints[i].x, 2) + Math.Pow(boundaryPoints[i].z, 2));
+            if (maxDis < temp)
+                maxDis = temp;
+        }
+        Debug.Log("boundary max x is " + x1 + " min x is " + x2);
+        Debug.Log("boundary max y is " + y1 + " min y is " + y2);
+        Debug.Log("boundary max z is " + z1 + " min z is " + z2);
+        Debug.Log("boundary max dis" + maxDis);
+         if (maxDis < (4.5 * 4.5))
+            {
+                //show hint
+                Quit();
+            }
+        // Debug.Log(dim.x);
+        // Debug.Log(dim.y);
+        // Debug.Log(dim.z);
     }
 
     //TBA
@@ -323,12 +338,16 @@ public class carController : MonoBehaviour
         int[] ans = new int[maxnum];
         for (int i = 1; i < maxnum+1; i++)
             ans[i-1] = i;
-        while(maxnum>1)
+        while(maxnum>=1)
         {
             int temp = ran.Next(0, maxnum);
-            ans[temp] ^= ans[maxnum - 1];
-            ans[maxnum - 1] ^= ans[temp];
-            ans[temp] ^= ans[maxnum - 1];
+            // ans[temp] ^= ans[maxnum - 1];
+            // ans[maxnum - 1] ^= ans[temp];
+            // ans[temp] ^= ans[maxnum - 1];
+            int te = ans[temp];
+            ans[temp] = ans[maxnum - 1];
+            ans[maxnum - 1] = te;
+            Debug.Log(te);
             maxnum--;
         }
         return ans;
@@ -345,18 +364,18 @@ public class carController : MonoBehaviour
 
         //TBA hand.SetActive(pos >= 16);
         //disable all unchosen coachman
-        int animatorType = pos / 2 - 1;
-        coachman.SetActive(animatorType == 0);
-        mechCoachman.SetActive(animatorType == 1);
-        capsuleCoachman1.SetActive(animatorType == 2);
-        capsuleCoachman2.SetActive(animatorType == 3);
-        if (animatorType == 0)
+        coachmanType = pos / 2 - 1;
+        for(int i = 0; i < 4; i++)
+        {
+            coachmen[i].SetActive(coachmanType == i);
+        }
+        if (coachmanType == 0)
             activatedAnimator = coachmanAnimator;
-        else if (animatorType == 1)
+        else if (coachmanType == 1)
             activatedAnimator = mechCoachmanAnimator;
-        else if (animatorType == 2)
+        else if (coachmanType == 2)
             activatedAnimator = capsuleCoachman1Animator;
-        else if (animatorType == 3)
+        else if (coachmanType == 3)
             activatedAnimator = capsuleCoachman2Animator;
         else //TBA: hand gesture
             ;
@@ -369,11 +388,13 @@ public class carController : MonoBehaviour
         threadFlag = false;
         isStart = false;
         //save the waiting time&crossing time to DB
+
         //relocate the pedestrian
-        centerEye.transform.position = new Vector3(-319.5f, 71.4f, 0.72f);
+        GameObject.Find("RigCameraRig").GetComponent<OVRCameraMove>().ResetPos();
         //show the menu
         menu.SetActive(true);
         taskNum++;
+        //TBA: relocate the coachman
     }
 
     //This method will not be called
