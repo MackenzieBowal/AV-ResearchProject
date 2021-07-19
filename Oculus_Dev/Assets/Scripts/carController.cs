@@ -39,12 +39,12 @@ public class carController : MonoBehaviour
     private string[] coachmanTag = {"", "_Mech", "_Cap1","_Cap2"};
     private float[] popDis = {0.575f, 0.52f, 0.65f, 0.58f};
     //The total number of all tasks for one participant
-    private const int TOTAL_TASK_NUM = 6;
+    private const int TOTAL_TASK_NUM = 9;
     //The task that will be showed next
     private int taskNum = 0;
     private int[] randomOrder;
     private int userID;
-    private int coachmanType;
+    private int coachmanType = -1;
     private float startTime;
     //private double slowDownTime = 0.5f;
     private Vector3 Rotation;
@@ -63,6 +63,8 @@ public class carController : MonoBehaviour
     private bool isStart = false;
     private bool threadFlag = true;
     private bool isSlowDown = false;
+
+    private bool isEyeTrack = false;
     void Start()
     {
         /*
@@ -87,14 +89,14 @@ public class carController : MonoBehaviour
         posCollection = database.GetCollection<BsonDocument>("crossinfops");
         rotCollection = database.GetCollection<BsonDocument>("crossinfors");
         orderCollection = database.GetCollection<BsonDocument>("orderinfos");
-        userCollection = database.GetCollection<BsonDocument>("userinfo");
-        Debug.Log("#####start getting userID from DB");
+        userCollection = database.GetCollection<BsonDocument>("userinfos");
         //Get and update the userID
         GetAndUpdateUserID();
         //Generate the order for each participant and save it to database
         randomOrder = GetRandomList(TOTAL_TASK_NUM);
         SaveOrderInfoToDB();
         SetAnimator();
+        
     }
 
     private void Update()
@@ -103,10 +105,10 @@ public class carController : MonoBehaviour
         Position = centerEye.transform.position;
         TimeInSeconds = Time.realtimeSinceStartup - startTime;
         //if crossed, end task
-        if (centerEye.transform.position.x < -324)
+        if (isStart&&centerEye.transform.position.x < -324)
             EndTask();
         //if time is out, end task(the pedestrians didn't make decisions)
-        else if (Time.realtimeSinceStartup - startTime > 33)
+        else if (isStart&&Time.realtimeSinceStartup - startTime > 10)
             EndTask();
     }
 
@@ -120,8 +122,6 @@ public class carController : MonoBehaviour
             if (!isSlowDown&&this.transform.position.z > -16 )
             {
                 velocity = velocity + deceleration * Time.deltaTime;
-                 Debug.Log("##### pos: " + this.transform.position.z);
-                 Debug.Log("##### velocity: " + velocity.z);
                 //pop up
                 if(coachmanType <= 3 && coachmanType >= 0)
                     coachmen[coachmanType].transform.Translate(new Vector3(0f, popDis[coachmanType] / 3.0f, 0f) * Time.deltaTime);
@@ -133,6 +133,11 @@ public class carController : MonoBehaviour
                     isSlowDown = true;
                     PlayAnimation();
                 }
+            }
+            if(isEyeTrack)
+            {
+                rightEye.transform.rotation = Quaternion.Slerp(rightEye.transform.rotation, Quaternion.LookRotation(centerEye.transform.position - rightEye.transform.position), 1.0f * Time.deltaTime);
+                leftEye.transform.rotation = Quaternion.Slerp(leftEye.transform.rotation, Quaternion.LookRotation(centerEye.transform.position - leftEye.transform.position), 1.0f * Time.deltaTime);
             }
             //animatorInfo = activatedAnimator.GetCurrentAnimatorStateInfo(0);
             //normalizedTime decides if the animation ends or not. if normalizedTime > 1, it's ends
@@ -155,7 +160,10 @@ public class carController : MonoBehaviour
         else if(10 <= pos&&pos < 16)
         {
             //facial expression design
-            EyeTrack(pos > 12);
+            if (13 <= pos&&pos < 16)
+                isEyeTrack = true;
+            else
+                isEyeTrack = false;
         }
         else if (pos >= 16)
         {
@@ -172,6 +180,7 @@ public class carController : MonoBehaviour
             }
         else
         {
+            SetAnimator();
             menu.SetActive(false);
             isStart = true;
             animationFlag = false;
@@ -179,7 +188,6 @@ public class carController : MonoBehaviour
             velocity = new Vector3(0.0f, 0.0f, 10f);
             startTime = Time.realtimeSinceStartup;
             this.transform.localPosition = new Vector3(-322.0f, 71.7f, -21.0f);  
-            //saveDatatest();
             SendDataToDB();
         }
     }
@@ -196,20 +204,13 @@ public class carController : MonoBehaviour
         Application.Quit();
     }
     
-    /*
+    
     public void TriggerSeeArounnd()
     {
-        Debug.Log("see around");
-        //activatedAnimator.SetTrigger("SeeAroundTrigger");
-        activatedAnimator.Play("SeeAround" + coachmanTag[coachmanType]);   //播放动画
+        activatedAnimator.Play("Idle");
         activatedAnimator.Update(0);
-        if (coachmanType == 2)
-        {
-            activatedAnimator.Play("Default"); 
-            activatedAnimator.Update(1);
-        }
     }
-    */
+    
     //pop up the coachman at the slowdown process
     public void TriggerCoachmanAnimation(int isNegative)
     {
@@ -236,17 +237,14 @@ public class carController : MonoBehaviour
     }
     public async void SaveCrossInfoToDB()
     {
-        Debug.Log("#####save cross data to DB");
-        var posData = new BsonDocument { { "userID", userID }, { "x", Position.x }, { "z", Position.z }, { "timeInSeconds", TimeInSeconds } };
-        var rotData = new BsonDocument { { "userID", userID }, { "rotationX", Rotation.x }, { "rotationY", Rotation.y }, { "rotationZ", Rotation.z }, { "timeInSeconds", TimeInSeconds } };
+        var posData = new BsonDocument { { "userID", userID }, { "taskID", randomOrder[taskNum] }, { "x", Position.x }, { "z", Position.z }, { "timeInSeconds", TimeInSeconds } };
+        var rotData = new BsonDocument { { "userID", userID }, { "taskID", randomOrder[taskNum] }, { "rotationX", Rotation.x }, { "rotationY", Rotation.y }, { "rotationZ", Rotation.z }, { "timeInSeconds", TimeInSeconds } };
         await posCollection.InsertOneAsync(posData);
         await rotCollection.InsertOneAsync(rotData);
-        Debug.Log("#####saving cross data to DB is successful");
     }
 
     public async void SaveOrderInfoToDB()
     {
-        Debug.Log("#####save order data to DB");
         string order = "";
         foreach (int value in randomOrder)
         {
@@ -256,14 +254,11 @@ public class carController : MonoBehaviour
         
         var orderData = new BsonDocument { { "userID", userID }, { "order", order }};
         await orderCollection.InsertOneAsync(orderData);
-        Debug.Log("#####saving order data to DB is successful");
     }
     public async void GetAndUpdateUserID()
     {
         var userInfo = userCollection.FindAsync(new BsonDocument());
         var userInfoAwaited = await userInfo;
-
-        Debug.Log("#####received info from DB");
         var userIDJson = userInfoAwaited.ToList()[0].ToString();
         int startPos = userIDJson.IndexOf("),", 0) + 2;
         int beginPos = userIDJson.IndexOf(": ", startPos);
@@ -273,7 +268,6 @@ public class carController : MonoBehaviour
         userID = int.Parse(userId);
         var filter = Builders<BsonDocument>.Filter.Eq("userID", userID);
         var update = Builders<BsonDocument>.Update.Set("userID", userID + 1);
-        Debug.Log("#####update user DB");
         await userCollection.UpdateOneAsync(filter, update);
     }
     public void timer()
@@ -309,10 +303,6 @@ public class carController : MonoBehaviour
             if (maxDis < temp)
                 maxDis = temp;
         }
-        Debug.Log("boundary max x is " + x1 + " min x is " + x2);
-        Debug.Log("boundary max y is " + y1 + " min y is " + y2);
-        Debug.Log("boundary max z is " + z1 + " min z is " + z2);
-        Debug.Log("boundary max dis" + maxDis);
          if (maxDis < (4.5 * 4.5))
             {
                 //show hint
@@ -321,15 +311,6 @@ public class carController : MonoBehaviour
         // Debug.Log(dim.x);
         // Debug.Log(dim.y);
         // Debug.Log(dim.z);
-    }
-
-    //TBA
-    private void EyeTrack(bool isTrack)
-    {
-        if(isTrack)
-        {
-            // do the track
-        }
     }
 
     public int[] GetRandomList(int maxnum)
@@ -341,9 +322,6 @@ public class carController : MonoBehaviour
         while(maxnum>=1)
         {
             int temp = ran.Next(0, maxnum);
-            // ans[temp] ^= ans[maxnum - 1];
-            // ans[maxnum - 1] ^= ans[temp];
-            // ans[temp] ^= ans[maxnum - 1];
             int te = ans[temp];
             ans[temp] = ans[maxnum - 1];
             ans[maxnum - 1] = te;
@@ -384,17 +362,26 @@ public class carController : MonoBehaviour
     //when one task ends
     public void EndTask()
     {
-        startTime = Time.realtimeSinceStartup;
         threadFlag = false;
         isStart = false;
-        //save the waiting time&crossing time to DB
-
-        //relocate the pedestrian
-        GameObject.Find("RigCameraRig").GetComponent<OVRCameraMove>().ResetPos();
-        //show the menu
+        //save the waiting time&crossing time to DB?
         menu.SetActive(true);
         taskNum++;
-        //TBA: relocate the coachman
+        //relocate the coachman
+        if(coachmanType <= 3 && coachmanType >= 0)
+        {
+            TriggerSeeArounnd();
+            Vector3 coachmanPos = coachmen[coachmanType].transform.localPosition;
+            coachmanPos.y -= popDis[coachmanType];
+            coachmen[coachmanType].transform.localPosition = coachmanPos;
+        }
+        if (isEyeTrack)
+        {
+            isEyeTrack = false;
+            Quaternion originRotation = Quaternion.Euler(new Vector3(0f,-180f,0f));
+            rightEye.transform.localRotation = originRotation;
+            leftEye.transform.localRotation = originRotation;
+        }
     }
 
     //This method will not be called
@@ -464,11 +451,11 @@ public class carController : MonoBehaviour
             }
       }
     }
-    // void GetAnimatorInfo()
-    // {
-    //     string name = activatedAnimator.GetCurrentAnimatorClipInfo(0)[0].clip.name;//获取当前播放动画的名称
-    //     Debug.Log("当前播放的动画名为：" + name);
-    //     float length = activatedAnimator.GetCurrentAnimatorClipInfo(0)[0].clip.length;//获取当前动画的时间长度
-    //     Debug.Log("播放动画的长度：" + length);
-    // }
+    void GetAnimatorInfo()
+    {
+        string name = activatedAnimator.GetCurrentAnimatorClipInfo(0)[0].clip.name;
+        Debug.Log("The name of the animation that is played now:" + name);
+        float length = activatedAnimator.GetCurrentAnimatorClipInfo(0)[0].clip.length;
+        Debug.Log("The length of the animation that is played now:" + length);
+    }
 }
