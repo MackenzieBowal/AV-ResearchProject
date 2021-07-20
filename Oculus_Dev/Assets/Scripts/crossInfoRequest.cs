@@ -19,13 +19,13 @@ public class crossInfoRequest : MonoBehaviour
     void Start()
     {
         database = client.GetDatabase("myFirstDatabase");
-        collection = database.GetCollection<BsonDocument>("crossinfops");
+        collection = database.GetCollection<BsonDocument>("userinfos");
     }
 
     public void GetInfo()
     {
         Debug.Log("button pressed");
-        GetCrossInfoFromDB();
+        getUserInfo();
         flag = false;
     }
 
@@ -46,6 +46,17 @@ public class crossInfoRequest : MonoBehaviour
         flag = true;
         Thread thread = new Thread(new ThreadStart(this.timer));
         thread.Start();
+    }
+
+    public async void getUserInfo()
+    {
+        var allCrossInfo = collection.FindAsync(new BsonDocument());
+        var crossInfoAwaited = await allCrossInfo;
+        Debug.Log("received info from DB");
+        foreach (var crossInfo in crossInfoAwaited.ToList())
+        {
+            Debug.Log(crossInfo.ToString());
+        }
     }
 
     public async Task<List<CrossInfoP>> GetCrossInfoFromDB()

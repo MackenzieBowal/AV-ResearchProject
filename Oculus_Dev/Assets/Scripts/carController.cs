@@ -18,11 +18,14 @@ public class carController : MonoBehaviour
     public Animator capsuleCoachman2Animator;
     //Animators for hand gestures-TBA
     public Animator handAnimator;
-    // All gestures, ccoachman velocitys are achieved by animation. So I use Animator to manage them.
+    // All gestures, coachman are achieved by animation. So I use Animator to manage them.
     private Animator activatedAnimator;
+    //the suffix of different coachman name
+    private string[] coachmanTag = {"", "_Mech", "_Cap1","_Cap2"};
+    //some magic numbers used to make coachman popup.
+    private float[] popDis = {0.575f, 0.52f, 0.65f, 0.58f};
 
     //private AnimatorStateInfo animatorInfo;
-
     public GameObject centerEye;
     public GameObject[] coachmen = new GameObject[4];
     // located propertities of facial expression design
@@ -33,23 +36,21 @@ public class carController : MonoBehaviour
     //menu
     private GameObject menu;
     private GameObject quitButton;
-    //velocity controls the speed of vehicle, the original speed is 40km/h,or 35km/h
+    //velocity controls the speed of vehicle, the original speed is 36km/h
     private Vector3 velocity = new Vector3(0.0f, 0.0f, 10f);
+    //It will take 3 second for the vehicle to totally stop, hence the deceleration is 3.3 m/s^2
     private Vector3 deceleration = new Vector3(0.0f, 0.0f, - 3.3f);
-    private string[] coachmanTag = {"", "_Mech", "_Cap1","_Cap2"};
-    private float[] popDis = {0.575f, 0.52f, 0.65f, 0.58f};
     //The total number of all tasks for one participant
-    private const int TOTAL_TASK_NUM = 9;
+    private const int TOTAL_TASK_NUM = 15;
     //The task that will be showed next
     private int taskNum = 0;
     private int[] randomOrder;
     private int userID;
     private int coachmanType = -1;
     private float startTime;
-    //private double slowDownTime = 0.5f;
+    private float TimeInSeconds;
     private Vector3 Rotation;
     private Vector3 Position;
-    private float TimeInSeconds;
     private Vector3[] boundaryPoints;
     //network and DB
     private MongoClient client = new MongoClient("mongodb+srv://WeiWei:AnthroWME-db@cluster0.u0268.mongodb.net/myFirstDatabase?retryWrites=true&w=majority");
@@ -71,15 +72,14 @@ public class carController : MonoBehaviour
             get all the gameObject.
         */
         menu = GameObject.Find("Menu");
-        // set the quitButton unvisiable
         quitButton = GameObject.Find("Menu/Quit");
-        quitButton.SetActive(false);
         leftEye = GameObject.Find("Waymo/LeftEye");
         rightEye = GameObject.Find("Waymo/RightEye");
         lips[0] = GameObject.Find("Waymo/NormalLip");
         lips[1] = GameObject.Find("Waymo/PositiveLip");
         lips[2] = GameObject.Find("Waymo/NegativeLip");
-        //animationClip = activatedAnimator.runtimeAnimatorController.animationClips;
+        // set the quitButton unvisiable
+        quitButton.SetActive(false);
 
         //boundary points
         boundaryPoints = GameObject.Find("BoundaryCheck").GetComponent<GuardianScripts>().getBoundaryInfo();
@@ -92,28 +92,33 @@ public class carController : MonoBehaviour
         userCollection = database.GetCollection<BsonDocument>("userinfos");
         //Get and update the userID
         GetAndUpdateUserID();
-        //Generate the order for each participant and save it to database
-        randomOrder = GetRandomList(TOTAL_TASK_NUM);
-        SaveOrderInfoToDB();
         SetAnimator();
         
     }
 
+    /*
+        The update of rotation and position and time is done in following func.
+        It also checks if the task is done.
+    */
     private void Update()
     {
         Rotation = centerEye.transform.eulerAngles;
         Position = centerEye.transform.position;
-        TimeInSeconds = Time.realtimeSinceStartup - startTime;
         //if crossed, end task
         if (isStart&&centerEye.transform.position.x < -324)
             EndTask();
         //if time is out, end task(the pedestrians didn't make decisions)
-        else if (isStart&&Time.realtimeSinceStartup - startTime > 10)
+        else if (isStart&&Time.realtimeSinceStartup - startTime > 15)
             EndTask();
     }
 
+    /*
+        The vehicle movement was done in FixedUpdate. The vehicle will start at z = -21, start to
+        slowdown at z = -16 and stop at z = -1. The pos of intersection is z = 0;
+    */
     void FixedUpdate()
-    {        
+    {   
+        TimeInSeconds = Time.realtimeSinceStartup - startTime;     
         if(isStart)
         {  
             //moving AV
@@ -139,15 +144,12 @@ public class carController : MonoBehaviour
                 rightEye.transform.rotation = Quaternion.Slerp(rightEye.transform.rotation, Quaternion.LookRotation(centerEye.transform.position - rightEye.transform.position), 1.0f * Time.deltaTime);
                 leftEye.transform.rotation = Quaternion.Slerp(leftEye.transform.rotation, Quaternion.LookRotation(centerEye.transform.position - leftEye.transform.position), 1.0f * Time.deltaTime);
             }
-            //animatorInfo = activatedAnimator.GetCurrentAnimatorStateInfo(0);
-            //normalizedTime decides if the animation ends or not. if normalizedTime > 1, it's ends
-            //if ((animatorInfo.normalizedTime >= 1.0f) && (animatorInfo.IsName("Negative" + coachmanTag[coachmanType])))
-            //TriggerSeeArounnd();
         }
     }
 
-    // play animation according to randomOrder
-    
+    /*
+        play animation according to randomOrder 
+    */
     public void PlayAnimation()
     {
         int pos = randomOrder[taskNum] % 23;
@@ -172,7 +174,8 @@ public class carController : MonoBehaviour
     }
     public void StartTask()
     {
-        Debug.Log(taskNum);
+        taskNum++;
+        //Debug.Log(taskNum);
         if (taskNum >= TOTAL_TASK_NUM)
             {
                 Debug.Log("#####Experiment is over");
@@ -237,7 +240,7 @@ public class carController : MonoBehaviour
     }
     public async void SaveCrossInfoToDB()
     {
-        var posData = new BsonDocument { { "userID", userID }, { "taskID", randomOrder[taskNum] }, { "x", Position.x }, { "z", Position.z }, { "timeInSeconds", TimeInSeconds } };
+        var posData = new BsonDocument { { "userID", userID }, { "taskID", randomOrder[taskNum] }, { "x", Position.x }, { "y", Position.y },{ "z", Position.z }, { "timeInSeconds", TimeInSeconds } };
         var rotData = new BsonDocument { { "userID", userID }, { "taskID", randomOrder[taskNum] }, { "rotationX", Rotation.x }, { "rotationY", Rotation.y }, { "rotationZ", Rotation.z }, { "timeInSeconds", TimeInSeconds } };
         await posCollection.InsertOneAsync(posData);
         await rotCollection.InsertOneAsync(rotData);
@@ -250,7 +253,7 @@ public class carController : MonoBehaviour
         {
             order = order + value.ToString() + ", ";
         }
-        order = order.Substring(0,order.Length-2);
+        order = order.Substring(0,order.Length - 2);
         
         var orderData = new BsonDocument { { "userID", userID }, { "order", order }};
         await orderCollection.InsertOneAsync(orderData);
@@ -263,19 +266,22 @@ public class carController : MonoBehaviour
         int startPos = userIDJson.IndexOf("),", 0) + 2;
         int beginPos = userIDJson.IndexOf(": ", startPos);
         string userId = "";
-        for (int j = beginPos + 2; j < userIDJson.Length - 1; j++)
+        for (int j = beginPos + 2; j < userIDJson.Length - 2; j++)
             userId = userId + userIDJson[j];
         userID = int.Parse(userId);
         var filter = Builders<BsonDocument>.Filter.Eq("userID", userID);
         var update = Builders<BsonDocument>.Update.Set("userID", userID + 1);
         await userCollection.UpdateOneAsync(filter, update);
+        //Generate the order for each participant and save it to database
+        randomOrder = GetRandomList(TOTAL_TASK_NUM);
+        SaveOrderInfoToDB();
     }
     public void timer()
     {
         //Thread.CurrentThread.IsBackground = true;
         while (threadFlag)
         {
-            Thread.CurrentThread.Join(10000);
+            Thread.CurrentThread.Join(1000);
             SaveCrossInfoToDB();
         }
     }
@@ -305,12 +311,8 @@ public class carController : MonoBehaviour
         }
          if (maxDis < (4.5 * 4.5))
             {
-                //show hint
                 Quit();
             }
-        // Debug.Log(dim.x);
-        // Debug.Log(dim.y);
-        // Debug.Log(dim.z);
     }
 
     public int[] GetRandomList(int maxnum)
@@ -325,7 +327,6 @@ public class carController : MonoBehaviour
             int te = ans[temp];
             ans[temp] = ans[maxnum - 1];
             ans[maxnum - 1] = te;
-            Debug.Log(te);
             maxnum--;
         }
         return ans;
@@ -364,9 +365,7 @@ public class carController : MonoBehaviour
     {
         threadFlag = false;
         isStart = false;
-        //save the waiting time&crossing time to DB?
         menu.SetActive(true);
-        taskNum++;
         //relocate the coachman
         if(coachmanType <= 3 && coachmanType >= 0)
         {
