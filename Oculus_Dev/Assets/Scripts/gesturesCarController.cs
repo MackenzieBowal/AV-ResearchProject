@@ -23,7 +23,9 @@ public class gesturesCarController : MonoBehaviour
     private GameObject sign;
     private GameObject stop;
 
-    private GameObject rightArm;
+    private GameObject hand;
+    private GameObject batonHand;
+
     private int armState = 0;   // 0 = Start, 1 = Open, 2 = Resting, 3 = Go Ahead
     private int gestureNum = 0;
     private int bGestureNum = 0;
@@ -42,7 +44,14 @@ public class gesturesCarController : MonoBehaviour
     {
 
         // locate the arms
-        rightArm = GameObject.Find("Waymo/RightArm");
+        hand = GameObject.Find("Waymo/Arm");
+        batonHand = GameObject.Find("Waymo/ArmBaton");
+
+        hand.SetActive(true);
+        batonHand.SetActive(false);
+
+        
+   
 
         // located the zebraline
         city = GameObject.Find("City");
