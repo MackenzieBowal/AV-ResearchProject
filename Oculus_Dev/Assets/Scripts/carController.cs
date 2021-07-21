@@ -16,8 +16,9 @@ public class carController : MonoBehaviour
     public Animator mechCoachmanAnimator;
     public Animator capsuleCoachman1Animator;
     public Animator capsuleCoachman2Animator;
-    //Animators for hand gestures-TBA
+    //Animators for hand gestures
     public Animator handAnimator;
+    public Animator handBatonAnimator;
     // All gestures, coachman are achieved by animation. So I use Animator to manage them.
     private Animator activatedAnimator;
     //the suffix of different coachman name
@@ -32,7 +33,10 @@ public class carController : MonoBehaviour
     private GameObject[] lips = new GameObject[3];
     private GameObject rightEye;
     private GameObject leftEye;
+    private string[] armAnimations = { "Go Ahead", "Still Palm Out", "Forearm Wave", "Finger Point", "Motion Downward", "One Finger Wait" };
+    private string[] batonArmAnimations = { "Sweep Sideways", "Baton Circles" };
     private GameObject hand;
+    private GameObject handBaton;
     //menu
     private GameObject menu;
     private GameObject quitButton;
@@ -78,6 +82,8 @@ public class carController : MonoBehaviour
         lips[0] = GameObject.Find("Waymo/NormalLip");
         lips[1] = GameObject.Find("Waymo/PositiveLip");
         lips[2] = GameObject.Find("Waymo/NegativeLip");
+        hand = GameObject.Find("Waymo/Arm");
+        handBaton = GameObject.Find("Waymo/ArmBaton");
         // set the quitButton unvisiable
         quitButton.SetActive(false);
 
@@ -130,6 +136,10 @@ public class carController : MonoBehaviour
                 //pop up
                 if(coachmanType <= 3 && coachmanType >= 0)
                     coachmen[coachmanType].transform.Translate(new Vector3(0f, popDis[coachmanType] / 3.0f, 0f) * Time.deltaTime);
+                if (randomOrder[taskNum] % 23 >= 16 && randomOrder[taskNum] % 23 <= 21)
+                    activatedAnimator.Play("Open");
+                if (randomOrder[taskNum] % 23 >= 22 && randomOrder[taskNum] % 23 <= 23)
+                    activatedAnimator.Play("OpenBaton");
                 if (!animationFlag && velocity.z <= 0)
                 {
                     //play animation
@@ -167,9 +177,14 @@ public class carController : MonoBehaviour
             else
                 isEyeTrack = false;
         }
-        else if (pos >= 16)
+        //no baton hand gestures
+        else if (pos >= 16 && pos <= 21)
         {
-            // do the hand gesture
+            activatedAnimator.Play(armAnimations[pos - 16]);
+        }
+        else
+        {
+            activatedAnimator.Play(batonArmAnimations[pos - 22]);
         }
     }
     public void StartTask()
@@ -340,8 +355,9 @@ public class carController : MonoBehaviour
         lips[0].SetActive(pos == 10 || pos == 13);
         lips[1].SetActive(pos == 11 || pos == 14);
         lips[2].SetActive(pos == 12 || pos == 15);
+        hand.SetActive(pos >= 16 && pos <= 21);
+        handBaton.SetActive(pos == 22 || pos == 23);
 
-        //TBA hand.SetActive(pos >= 16);
         //disable all unchosen coachman
         coachmanType = pos / 2 - 1;
         for(int i = 0; i < 4; i++)
@@ -356,8 +372,18 @@ public class carController : MonoBehaviour
             activatedAnimator = capsuleCoachman1Animator;
         else if (coachmanType == 3)
             activatedAnimator = capsuleCoachman2Animator;
-        else //TBA: hand gesture
-            ;
+        else if (pos >= 16 && pos <= 21)
+        {
+            activatedAnimator = handAnimator;
+            activatedAnimator.Play("Start");
+        }
+        else if (pos >= 22 && pos <= 23)
+        {
+            activatedAnimator = handBatonAnimator;
+            activatedAnimator.Play("StartBaton");
+        }
+
+
     }
 
     //when one task ends
@@ -380,6 +406,15 @@ public class carController : MonoBehaviour
             Quaternion originRotation = Quaternion.Euler(new Vector3(0f,-180f,0f));
             rightEye.transform.localRotation = originRotation;
             leftEye.transform.localRotation = originRotation;
+        }
+        int pos = randomOrder[taskNum] % 23;
+        if (pos >= 16 && pos <= 21)
+        {
+            activatedAnimator.Play("Start");
+        }
+        else if (pos >= 22 && pos <= 23)
+        {
+            activatedAnimator.Play("StartBaton");
         }
     }
 
