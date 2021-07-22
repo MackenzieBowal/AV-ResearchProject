@@ -45,7 +45,7 @@ public class carController : MonoBehaviour
     //It will take 3 second for the vehicle to totally stop, hence the deceleration is 3.3 m/s^2
     private Vector3 deceleration = new Vector3(0.0f, 0.0f, - 3.3f);
     //The total number of all tasks for one participant
-    private const int TOTAL_TASK_NUM = 15;
+    private const int TOTAL_TASK_NUM = 23;
     //The task that will be showed next
     private int taskNum = 0;
     private int[] randomOrder;
@@ -98,8 +98,9 @@ public class carController : MonoBehaviour
         userCollection = database.GetCollection<BsonDocument>("userinfos");
         //Get and update the userID
         GetAndUpdateUserID();
+        Debug.Log("the value randomOrder[0]" + randomOrder[0]);
         SetAnimator();
-        
+        Debug.Log("start function is over");
     }
 
     /*
@@ -350,6 +351,7 @@ public class carController : MonoBehaviour
     public void SetAnimator()
     {
         int pos = randomOrder[taskNum] % 23;
+        Debug.Log("pos is :" + pos);
         rightEye.SetActive(pos >= 10 && pos <= 15);
         leftEye.SetActive(pos >= 10 && pos <= 15);
         lips[0].SetActive(pos == 10 || pos == 13);
