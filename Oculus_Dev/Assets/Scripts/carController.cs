@@ -75,6 +75,7 @@ public class carController : MonoBehaviour
         /*
             get all the gameObject.
         */
+        Debug.Log("starts: start");
         menu = GameObject.Find("Menu");
         quitButton = GameObject.Find("Menu/Quit");
         leftEye = GameObject.Find("Waymo/LeftEye");
