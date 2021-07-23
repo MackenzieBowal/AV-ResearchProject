@@ -1,5 +1,9 @@
 fileFormatVersion: 2
+<<<<<<< HEAD:Oculus_Dev/Assets/Animation/Motions/test.anim.meta
+guid: c120c6b4bac3172429575cd6a9443544
+=======
 guid: 0c70e50822914432bb7a3985b5313b67
+>>>>>>> Mackenzie:Oculus_Dev/Assets/Arm Animations/ArmAnimController.controller.meta
 NativeFormatImporter:
   externalObjects: {}
   mainObjectFileID: 9100000
