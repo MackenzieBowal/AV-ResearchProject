@@ -41,9 +41,9 @@ public class carController : MonoBehaviour
     private GameObject menu;
     private GameObject quitButton;
     //velocity controls the speed of vehicle, the original speed is 36km/h
-    private Vector3 velocity = new Vector3(0.0f, 0.0f, 10f);
+    private Vector3 velocity = new Vector3(0.0f, 0.0f, 350/36f);
     //It will take 3 second for the vehicle to totally stop, hence the deceleration is 3.3 m/s^2
-    private Vector3 deceleration = new Vector3(0.0f, 0.0f, - 3.3f);
+    private Vector3 deceleration = new Vector3(0.0f, 0.0f, - 3.15f);
     //The total number of all tasks for one participant
     private const int TOTAL_TASK_NUM = 23;
     //The task that will be showed next
@@ -116,7 +116,7 @@ public class carController : MonoBehaviour
         if (isStart&&centerEye.transform.position.x < -324)
             EndTask();
         //if time is out, end task(the pedestrians didn't make decisions)
-        else if (isStart&&Time.realtimeSinceStartup - startTime > 15)
+        else if (isStart&&Time.realtimeSinceStartup - startTime > 14.75)
             EndTask();
     }
 
@@ -140,7 +140,7 @@ public class carController : MonoBehaviour
                     coachmen[coachmanType].transform.Translate(new Vector3(0f, popDis[coachmanType] / 3.0f, 0f) * Time.deltaTime);
                 if (randomOrder[taskNum] % 23 >= 16 && randomOrder[taskNum] % 23 <= 21)
                     activatedAnimator.Play("Open");
-                if (randomOrder[taskNum] % 23 >= 22 && randomOrder[taskNum] % 23 <= 23)
+                if (randomOrder[taskNum] % 23 == 22 && randomOrder[taskNum] % 23 == 0)
                     activatedAnimator.Play("OpenBaton");
                 if (!animationFlag && velocity.z <= 0)
                 {
@@ -184,10 +184,12 @@ public class carController : MonoBehaviour
         {
             activatedAnimator.Play(armAnimations[pos - 16]);
         }
-        else
+        else if (pos == 22)
         {
-            activatedAnimator.Play(batonArmAnimations[pos - 22]);
+            activatedAnimator.Play(batonArmAnimations[0]);
         }
+        else
+            activatedAnimator.Play(batonArmAnimations[1]);
     }
     public void StartTask()
     {
@@ -298,7 +300,7 @@ public class carController : MonoBehaviour
         //Thread.CurrentThread.IsBackground = true;
         while (threadFlag)
         {
-            Thread.CurrentThread.Join(1000);
+            Thread.CurrentThread.Join(100);
             SaveCrossInfoToDB();
         }
     }
@@ -415,7 +417,7 @@ public class carController : MonoBehaviour
         {
             activatedAnimator.Play("Start");
         }
-        else if (pos >= 22 && pos <= 23)
+        else if (pos == 22 || pos == 0)
         {
             activatedAnimator.Play("StartBaton");
         }
