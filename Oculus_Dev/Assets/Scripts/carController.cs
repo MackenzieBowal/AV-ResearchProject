@@ -42,6 +42,8 @@ public class carController : MonoBehaviour
     private GameObject quitButton;
     //velocity controls the speed of vehicle, the original speed is 36km/h
     private Vector3 velocity = new Vector3(0.0f, 0.0f, 350/36f);
+    //faceVelocity controls the speed of face showup, using localposition
+    private Vector3 faceVelocity = new Vector3(0.0f, 0.0f, 0.219f);
     //It will take 3 second for the vehicle to totally stop, hence the deceleration is 3.3 m/s^2
     private Vector3 deceleration = new Vector3(0.0f, 0.0f, - 3.15f);
     //The total number of all tasks for one participant
@@ -70,6 +72,9 @@ public class carController : MonoBehaviour
     private bool isSlowDown = false;
 
     private bool isEyeTrack = false;
+    private bool isRestart = false;
+    private bool isEndTask = false;
+    private bool isBlocked = false;
     void Start()
     {
         /*
@@ -114,10 +119,10 @@ public class carController : MonoBehaviour
         Position = centerEye.transform.position;
         //if crossed, end task
         if (isStart&&centerEye.transform.position.x < -324)
-            EndTask();
+            EndCrossing();
         //if time is out, end task(the pedestrians didn't make decisions)
         else if (isStart&&Time.realtimeSinceStartup - startTime > 14.75)
-            EndTask();
+            EndCrossing();
     }
 
     /*
@@ -126,22 +131,18 @@ public class carController : MonoBehaviour
     */
     void FixedUpdate()
     {   
-        TimeInSeconds = Time.realtimeSinceStartup - startTime;     
+        TimeInSeconds = Time.realtimeSinceStartup - startTime; 
+        float deltaTime = Time.deltaTime;
         if(isStart)
         {  
             //moving AV
-            this.transform.Translate(velocity * Time.deltaTime);
+            this.transform.Translate(velocity * deltaTime);
             //Slow down
             if (!isSlowDown&&this.transform.position.z > -16 )
             {
-                velocity = velocity + deceleration * Time.deltaTime;
-                //pop up
-                if(coachmanType <= 3 && coachmanType >= 0)
-                    coachmen[coachmanType].transform.Translate(new Vector3(0f, popDis[coachmanType] / 3.0f, 0f) * Time.deltaTime);
-                if (randomOrder[taskNum] % 23 >= 16 && randomOrder[taskNum] % 23 <= 21)
-                    activatedAnimator.Play("Open");
-                if (randomOrder[taskNum] % 23 == 22 && randomOrder[taskNum] % 23 == 0)
-                    activatedAnimator.Play("OpenBaton");
+                //show interfaces
+                MoveInterfaces(true,deltaTime);
+                velocity = velocity + deceleration * deltaTime;
                 if (!animationFlag && velocity.z <= 0)
                 {
                     //play animation
@@ -157,6 +158,54 @@ public class carController : MonoBehaviour
                 leftEye.transform.rotation = Quaternion.Slerp(leftEye.transform.rotation, Quaternion.LookRotation(centerEye.transform.position - leftEye.transform.position), 1.0f * Time.deltaTime);
             }
         }
+        if(isRestart)
+        {
+            if(velocity.z < 350/36)
+            {
+                velocity = velocity - deceleration * deltaTime;
+                //hide interfaces
+                MoveInterfaces(false, deltaTime);
+            }
+            this.transform.Translate(velocity * deltaTime);
+            if(!isEndTask&&this.transform.position.z > 19)
+            {
+                menu.SetActive(true);
+                isEndTask = true;
+            }
+            isRestart = this.transform.position.z < 49;
+        }
+        if(isBlocked&&centerEye.transform.position.x > -320)
+        {
+            isBlocked = false;
+            isRestart = true;
+        }
+    }
+
+    public void MoveInterfaces(bool isPop, float deltaTime)
+    {
+        int pos = randomOrder[taskNum] % 23;
+        float weight = isPop? 1: -1;
+        string armAniName = isPop? "Open": "Start";
+        string batonArmAniName = isPop? "OpenBaton": "StartBaton";
+        //pop up
+        if(coachmanType <= 3 && coachmanType >= 0)
+            {
+                TriggerSeeArounnd();
+                coachmen[coachmanType].transform.Translate(new Vector3(0f, weight*popDis[coachmanType] / 3.0f, 0f) * deltaTime);
+            }
+        //hand gestures
+        if ( pos >= 16 && pos <= 21)
+            activatedAnimator.Play(armAniName);
+        else if (pos == 22 && pos == 0)
+            activatedAnimator.Play(batonArmAniName);
+        else if (pos >= 10 && pos <= 15)
+            {
+                rightEye.transform.Translate(weight*faceVelocity * deltaTime);
+                leftEye.transform.Translate(weight*faceVelocity * deltaTime);
+                lips[0].transform.Translate(weight*faceVelocity * deltaTime, Space.World);
+                lips[1].transform.Translate(weight*faceVelocity * deltaTime,Space.World);
+                lips[2].transform.Translate(weight*faceVelocity * deltaTime, Space.World);
+            }
     }
 
     /*
@@ -207,7 +256,10 @@ public class carController : MonoBehaviour
             isStart = true;
             animationFlag = false;
             isSlowDown = false;
-            velocity = new Vector3(0.0f, 0.0f, 10f);
+            isBlocked = false;
+            isRestart = false;
+            isEndTask = false;
+            velocity = new Vector3(0.0f, 0.0f, 350/36f);
             startTime = Time.realtimeSinceStartup;
             this.transform.localPosition = new Vector3(-322.0f, 71.7f, -21.0f);  
             SendDataToDB();
@@ -300,7 +352,7 @@ public class carController : MonoBehaviour
         //Thread.CurrentThread.IsBackground = true;
         while (threadFlag)
         {
-            Thread.CurrentThread.Join(100);
+            Thread.CurrentThread.Join(3000);
             SaveCrossInfoToDB();
         }
     }
@@ -308,30 +360,30 @@ public class carController : MonoBehaviour
     public void BoundaryCheck()
     {
         //get the boundary info
-        float x1 = 0f, y1 = 0f, z1 = 0f,x2 = 0f, y2 = 0f, z2 = 0f;
+        // float x1 = 0f, y1 = 0f, z1 = 0f,x2 = 0f, y2 = 0f, z2 = 0f;
         float maxDis = 0f;
         for (int i = 0; i < boundaryPoints.Length; i++)
         {
-            if (boundaryPoints[i].x > x1)
-                x1 = boundaryPoints[i].x;
-            if (boundaryPoints[i].x < x2)
-                x2 = boundaryPoints[i].x;
-            if (boundaryPoints[i].y > y1)
-                y1 = boundaryPoints[i].y;
-            if (boundaryPoints[i].y < y2)
-                y2 = boundaryPoints[i].y;
-            if (boundaryPoints[i].z > z1)
-                z1 = boundaryPoints[i].z;
-            if (boundaryPoints[i].z < z2)
-                z2 = boundaryPoints[i].z;
+            // if (boundaryPoints[i].x > x1)
+            //     x1 = boundaryPoints[i].x;
+            // if (boundaryPoints[i].x < x2)
+            //     x2 = boundaryPoints[i].x;
+            // if (boundaryPoints[i].y > y1)
+            //     y1 = boundaryPoints[i].y;
+            // if (boundaryPoints[i].y < y2)
+            //     y2 = boundaryPoints[i].y;
+            // if (boundaryPoints[i].z > z1)
+            //     z1 = boundaryPoints[i].z;
+            // if (boundaryPoints[i].z < z2)
+            //     z2 = boundaryPoints[i].z;
             float temp = (float)(Math.Pow(boundaryPoints[i].x, 2) + Math.Pow(boundaryPoints[i].z, 2));
             if (maxDis < temp)
                 maxDis = temp;
         }
-         if (maxDis < (4.5 * 4.5))
-            {
-                Quit();
-            }
+        if (maxDis < (4.5 * 4.5))
+        {
+            Quit();
+        }
     }
 
     public int[] GetRandomList(int maxnum)
@@ -391,35 +443,19 @@ public class carController : MonoBehaviour
 
     }
 
-    //when one task ends
-    public void EndTask()
+    // time is over or crossing is over
+    public void EndCrossing()
     {
         threadFlag = false;
         isStart = false;
-        menu.SetActive(true);
-        //relocate the coachman
-        if(coachmanType <= 3 && coachmanType >= 0)
+        // road is blocked by pedestrians
+        if (centerEye.transform.position.x > -324 && centerEye.transform.position.x < -320)
         {
-            TriggerSeeArounnd();
-            Vector3 coachmanPos = coachmen[coachmanType].transform.localPosition;
-            coachmanPos.y -= popDis[coachmanType];
-            coachmen[coachmanType].transform.localPosition = coachmanPos;
+            isBlocked = true;
         }
-        if (isEyeTrack)
+        else
         {
-            isEyeTrack = false;
-            Quaternion originRotation = Quaternion.Euler(new Vector3(0f,-180f,0f));
-            rightEye.transform.localRotation = originRotation;
-            leftEye.transform.localRotation = originRotation;
-        }
-        int pos = randomOrder[taskNum] % 23;
-        if (pos >= 16 && pos <= 21)
-        {
-            activatedAnimator.Play("Start");
-        }
-        else if (pos == 22 || pos == 0)
-        {
-            activatedAnimator.Play("StartBaton");
+            isRestart = true;
         }
     }
 
