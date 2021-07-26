@@ -292,6 +292,7 @@ public class carController : MonoBehaviour
         randomOrder = GetRandomList(TOTAL_TASK_NUM);
         SaveOrderInfoToDB();
     }
+    
     public void timer()
     {
         //Thread.CurrentThread.IsBackground = true;
