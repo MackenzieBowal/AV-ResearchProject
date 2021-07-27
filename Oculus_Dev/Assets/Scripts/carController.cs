@@ -353,7 +353,7 @@ public class carController : MonoBehaviour
         //Thread.CurrentThread.IsBackground = true;
         while (threadFlag)
         {
-            Thread.CurrentThread.Join(3000);
+            Thread.CurrentThread.Join(100);
             SaveCrossInfoToDB();
         }
     }
