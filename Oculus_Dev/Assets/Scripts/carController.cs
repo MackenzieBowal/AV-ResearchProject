@@ -57,6 +57,7 @@ public class carController : MonoBehaviour
     private int userID;
     private int coachmanType = -1;
     private float startTime;
+    private float stopTime;
     private float TimeInSeconds;
     private Vector3 Rotation;
     private Vector3 Position;
@@ -123,7 +124,7 @@ public class carController : MonoBehaviour
         if (isStart&&centerEye.transform.position.x < -324)
             EndCrossing();
         //if time is out, end task(the pedestrians didn't make decisions)
-        else if (isStart&&Time.realtimeSinceStartup - startTime > 14.75)
+        else if (isSlowDown&&Time.realtimeSinceStartup - stopTime > 14.75)
             EndCrossing();
     }
 
@@ -148,6 +149,7 @@ public class carController : MonoBehaviour
                 velocity = velocity + deceleration * deltaTime;
                 if (!animationFlag && velocity.z <= 0)
                 {
+                    stopTime = Time.realtimeSinceStartup;
                     //play animation
                     animationFlag = true;
                     isSlowDown = true;
@@ -282,6 +284,7 @@ public class carController : MonoBehaviour
     {
         activatedAnimator.Play("SeeAround" + coachmanTag[coachmanType]);
         activatedAnimator.Update(0);
+        GetAnimatorInfo();
     }
     
     //pop up the coachman at the slowdown process
@@ -300,6 +303,7 @@ public class carController : MonoBehaviour
                 activatedAnimator.Play("Angry"); 
             activatedAnimator.Update(1);      
         }
+         GetAnimatorInfo();
     }
 
     public void SendDataToDB()
@@ -473,6 +477,7 @@ public class carController : MonoBehaviour
     {
         threadFlag = false;
         isStart = false;
+        isSlowDown = false;
         // road is blocked by pedestrians
         if (centerEye.transform.position.x > -324 && centerEye.transform.position.x < -320)
         {
