@@ -42,7 +42,7 @@ public class carController : MonoBehaviour
     //menu
     private GameObject menu;
     private GameObject quitButton;
-    //velocity controls the speed of vehicle, the original speed is 36km/h
+    //velocity controls the speed of vehicle, the original speed is 35km/h
     private Vector3 velocity = new Vector3(0.0f, 0.0f, 350/36f);
     //faceVelocity controls the speed of face showup, using localposition
     private Vector3 faceVelocity = new Vector3(0.0f, 0.0f, 0.219f);
@@ -54,7 +54,8 @@ public class carController : MonoBehaviour
     //The task that will be showed next
     private int taskNum = -1;
     private int[] randomOrder;
-    private int userID;
+    private int userID = -1;
+    private int presumeCross = 0;
     private int coachmanType = -1;
     private float startTime;
     private float stopTime;
@@ -67,7 +68,7 @@ public class carController : MonoBehaviour
     IMongoDatabase database;
     IMongoCollection<BsonDocument> posCollection;
     IMongoCollection<BsonDocument> rotCollection;
-    IMongoCollection<BsonDocument> orderCollection;
+    IMongoCollection<BsonDocument> presumeCrossCollection;
     IMongoCollection<BsonDocument> userCollection;
     private bool animationFlag = false;
     //isStart is decided by the menu button:Start task
@@ -104,7 +105,7 @@ public class carController : MonoBehaviour
         database = client.GetDatabase("myFirstDatabase");
         posCollection = database.GetCollection<BsonDocument>("crossinfops");
         rotCollection = database.GetCollection<BsonDocument>("crossinfors");
-        orderCollection = database.GetCollection<BsonDocument>("orderinfos");
+        presumeCrossCollection = database.GetCollection<BsonDocument>("presumecrossinfos");
         userCollection = database.GetCollection<BsonDocument>("userinfos");
         //Get and update the userID
         GetAndUpdateUserID();
@@ -121,10 +122,10 @@ public class carController : MonoBehaviour
         Rotation = centerEye.transform.eulerAngles;
         Position = centerEye.transform.position;
         //if crossed, end task
-        if (isStart&&centerEye.transform.position.x < -324)
+        if (isStart&&centerEye.transform.position.x < -322)
             EndCrossing();
         //if time is out, end task(the pedestrians didn't make decisions)
-        else if (isSlowDown&&Time.realtimeSinceStartup - stopTime > 14.75)
+        else if (isSlowDown&&Time.realtimeSinceStartup - stopTime > 11)
             EndCrossing();
     }
 
@@ -175,10 +176,13 @@ public class carController : MonoBehaviour
                 EndTask();
             isRestart = this.transform.position.z < 49;
         }
-        if(isBlocked&&centerEye.transform.position.x > -320)
+        if(isBlocked&&(centerEye.transform.position.x > -320 || centerEye.transform.position.x < -322))
         {
+            if (centerEye.transform.position.x < -322)
+                presumeCross +=1;
             isBlocked = false;
             isRestart = true;
+            threadFlag = false;
         }
     }
 
@@ -262,12 +266,12 @@ public class carController : MonoBehaviour
             isEndTask = false;
             velocity = new Vector3(0.0f, 0.0f, 350/36f);
             startTime = Time.realtimeSinceStartup;
-            this.transform.localPosition = new Vector3(-322.0f, 71.7f, -21.0f);
+            this.transform.localPosition = new Vector3(-321.4f, 71.7f, -21.0f);
             SendDataToDB();
         }
     }
 
-    public void Quit()
+    public async void Quit()
     {
         /*Will not write data in local file any more
             string filepath = GetAndroidExternalFilesDir();
@@ -276,6 +280,9 @@ public class carController : MonoBehaviour
             Debug.Log("*****Quit");
             Debug.Log(dataList);
         */
+        if (userID!=-1)
+        {var crossData = new BsonDocument { { "userID", userID }, { "presumeCross", presumeCross} };
+        await presumeCrossCollection.InsertOneAsync(crossData);}
         Application.Quit();
     }
     
@@ -320,18 +327,6 @@ public class carController : MonoBehaviour
         await rotCollection.InsertOneAsync(rotData);
     }
 
-    public async void SaveOrderInfoToDB()
-    {
-        string order = "";
-        foreach (int value in randomOrder)
-        {
-            order = order + value.ToString() + ", ";
-        }
-        order = order.Substring(0,order.Length - 2);
-        
-        var orderData = new BsonDocument { { "userID", userID }, { "order", order }};
-        await orderCollection.InsertOneAsync(orderData);
-    }
     public async void GetAndUpdateUserID()
     {
         var userInfo = userCollection.FindAsync(new BsonDocument());
@@ -385,7 +380,7 @@ public class carController : MonoBehaviour
             if (maxDis < temp)
                 maxDis = temp;
         }
-        if (maxDis < (4.5 * 4.5))
+        if (maxDis < (2.5 * 2.5))
         {
             Quit();
         }
@@ -475,17 +470,17 @@ public class carController : MonoBehaviour
     // time is over or crossing is over
     public void EndCrossing()
     {
-        threadFlag = false;
         isStart = false;
         isSlowDown = false;
         // road is blocked by pedestrians
-        if (centerEye.transform.position.x > -324 && centerEye.transform.position.x < -320)
+        if (centerEye.transform.position.x > -322 && centerEye.transform.position.x < -320)
         {
             isBlocked = true;
         }
         else
         {
             isRestart = true;
+            threadFlag = false;
         }
     }
 
